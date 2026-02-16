@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Skript Academy: Step 1-200</title>
+    <style>
+        :root { --main: #4caf50; --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { margin: 0; display: flex; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Malgun Gothic', sans-serif; }
+        #sidebar { width: 280px; background: #000; border-right: 1px solid #333; overflow-y: auto; display: flex; flex-direction: column; }
+        .nav-header { padding: 20px; background: var(--main); color: black; font-weight: bold; text-align: center; }
+        .nav-item { padding: 12px 20px; border-bottom: 1px solid #222; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .nav-item:hover { background: #333; }
+        .nav-item.active { border-left: 5px solid var(--main); background: #222; color: var(--main); }
+        #main { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .card { width: 100%; max-width: 800px; background: var(--card); padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: var(--main); margin-top: 0; }
+        pre { background: #000; padding: 20px; border-radius: 10px; color: #a5d6a7; overflow-x: auto; line-height: 1.5; border: 1px solid #333; }
+        .quiz-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; width: 60%; border-radius: 5px; font-size: 1rem; }
+        button { padding: 12px 25px; background: var(--main); border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-left: 10px; }
+        #hint { display: none; color: #ffeb3b; background: rgba(255, 235, 59, 0.1); padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffeb3b; }
+        #feedback { margin-top: 15px; font-weight: bold; }
+        .progress { margin-bottom: 20px; font-size: 0.8rem; color: #888; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="nav-header">LEVEL 1 - 200</div>
+    <div id="nav-list"></div>
+</div>
+
+<div id="main">
+    <div class="card" id="app">
+        </div>
+</div>
+
+<script>
+    // 1~200단계 상세 데이터 생성기
+    const database = [];
+
+    for (let i = 1; i <= 200; i++) {
+        let content = {};
+        if (i <= 40) { // 1~40: 이벤트 기초
+            const events = ["join", "quit", "chat", "death", "respawn", "break", "place", "rightclick", "leftclick", "drop"];
+            const currentEvent = events[(i - 1) % events.length];
+            content = {
+                t: `이벤트 정복 - ${currentEvent} (${i}단계)`,
+                d: `스크립트의 시작은 이벤트입니다. 'on ${currentEvent}:'는 특정 상황이 발생했을 때 작동합니다.`,
+                c: `on ${currentEvent}:\n    send "액션 감지됨!" to player`,
+                q: `[${currentEvent}] 이벤트를 감지하는 구문을 입력하세요 (on 제외):`,
+                a: currentEvent,
+                h: `'${currentEvent}'를 그대로 입력해보세요.`
+            };
+        } else if (i <= 100) { // 41~100: 실행 구문 및 아이템
+            content = {
+                t: `액션 명령 - ${i}단계`,
+                d: `플레이어에게 무언가를 하려면 'send', 'give', 'teleport' 등을 사용합니다.`,
+                c: `on join:\n    give 1 diamond to player\n    send "보너스 지급!"`,
+                q: `플레이어에게 아이템을 주는 명령어는?`,
+                a: "give",
+                h: "'주다'라는 뜻의 4글자 영어 단어입니다."
+            };
+        } else { // 101~200: 변수 기초
+            content = {
+                t: `데이터 저장(변수) - ${i}단계`,
+                d: `데이터를 저장하려면 {변수명}을 사용합니다. 'set'으로 값을 지정하고 'add'로 더합니다.`,
+                c: `on break of stone:\n    add 1 to {stone::%player's uuid%}\n    send "광질 횟수: %{stone::%player's uuid%}%"`,
+                q: `변수 값을 1 늘릴 때 사용하는 단어는? (____ 1 to {var})`,
+                a: "add",
+                h: "'더하기'를 뜻하는 영어 단어입니다."
+            };
+        }
+        database.push(content);
+    }
+
+    let now = 0;
+    let fails = 0;
+
+    function load(idx) {
+        now = idx;
+        fails = 0;
+        const data = database[idx];
+        
+        // 내비게이션 업데이트
+        updateSidebar();
+
+        document.getElementById('app').innerHTML = `
+            <div class="progress">STEP ${idx + 1} / 1000</div>
+            <h1>${data.t}</h1>
+            <p>${data.d}</p>
+            <pre><code>${data.c}</code></pre>
+            <div class="quiz-section">
+                <h3>Quiz</h3>
+                <p>${data.q}</p>
+                <input type="text" id="ans-input" placeholder="정답 입력..." onkeypress="if(event.keyCode==13) check()">
+                <button onclick="check()">확인</button>
+                <div id="hint">💡 힌트: ${data.h}</div>
+                <div id="feedback"></div>
+            </div>
+        `;
+    }
+
+    function updateSidebar() {
+        const list = document.getElementById('nav-list');
+        list.innerHTML = '';
+        // 현재 레벨 주변 20개만 표시하거나 전체 표시 (여기선 200개 표시)
+        database.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = `nav-item ${i === now ? 'active' : ''}`;
+            div.innerText = `${i + 1}. ${item.t.split(' - ')[0]}`;
+            div.onclick = () => load(i);
+            list.appendChild(div);
+        });
+    }
+
+    function check() {
+        const input = document.getElementById('ans-input').value.trim().toLowerCase();
+        const correct = database[now].a.toLowerCase();
+        const feedback = document.getElementById('feedback');
+        const hint = document.getElementById('hint');
+
+        if (input === correct) {
+            feedback.innerHTML = "✅ 정답입니다! 다음 단계로 넘어갑니다.";
+            feedback.style.color = "#4caf50";
+            setTimeout(() => {
+                if (now < 199) load(now + 1);
+                else alert("1탄(200단계) 완료! 2탄을 요청해주세요!");
+            }, 1500);
+        } else {
+            fails++;
+            feedback.innerHTML = `❌ 틀렸습니다. (실패 횟수: ${fails}/4)`;
+            feedback.style.color = "#f44336";
+            if (fails >= 4) hint.style.display = "block";
+        }
+    }
+
+    window.onload = () => load(0);
+</script>
+</body>
+</html>
